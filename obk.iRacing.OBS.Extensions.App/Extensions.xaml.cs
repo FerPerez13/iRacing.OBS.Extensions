@@ -1,0 +1,143 @@
+﻿using System.IO;
+using System.Windows;
+using System.Windows.Media.Imaging;
+using obk.iRacing.Service.Interfaces;
+using WpfApp3.Helpers;
+
+namespace WpfApp3;
+
+public partial class Extensions : Window
+{
+    public int? Id { get; set; }
+    public string Username { get; set; }
+    public string Password { get; set; }
+    
+    private Timer? _timer;
+
+    private readonly IIRacingService _iRacingService;
+    
+    public Extensions(IIRacingService iRacingService, int id, string username, string password)
+    {
+        _iRacingService = iRacingService;
+        
+        if (!Directory.Exists(PathHelper.HtmlResults))
+        {
+            Directory.CreateDirectory(PathHelper.HtmlResults);
+        }
+        
+        InitializeComponent();
+        
+        this.Icon = new BitmapImage(new Uri(PathHelper.IconPath, UriKind.Absolute));
+        
+        Id = id;
+        Username = username;
+        Password = password;
+        
+        updateStatsToggleButton.Background = System.Windows.Media.Brushes.Red;
+    }
+
+    private void UpdateStatsToggleButton_OnChecked(object sender, RoutedEventArgs e)
+    {
+        loadingProgressBar.Visibility = Visibility.Visible;
+        loadingProgressBar.Background = System.Windows.Media.Brushes.Yellow;
+        
+        updateStatsToggleButton.Background = System.Windows.Media.Brushes.Teal;
+        
+        if (_timer == null) 
+        {
+            statsStatusText.Content = "⌛ Esperando...";
+            statsStatusText.Background = System.Windows.Media.Brushes.LightYellow;
+            _timer = new Timer( _ => GetInfoAndCreateOrUpdateHtml(), null, TimeSpan.Zero, TimeSpan.FromSeconds(60));
+        }
+
+    }
+
+    private async Task GetInfoAndCreateOrUpdateHtml()
+    {   
+        Dispatcher.Invoke(() =>
+        {
+            statsStatusText.Content = "☎️ Realizando llamada al servidor...";
+            statsStatusText.Background = System.Windows.Media.Brushes.LightSalmon;
+            loadingProgressBar.Visibility = Visibility.Visible;
+        });
+        
+        var driverInfo = _iRacingService.GetMemberProfileAsync().Result;
+        
+        var formulaLicense = driverInfo.Data.LicenseHistory.FirstOrDefault(x => x.Category == "formula_car"); 
+        var formulaGroup = formulaLicense.GroupName.Contains("Class ") ? formulaLicense.GroupName.Substring("Class ".Length) : formulaLicense.GroupName;
+        var formulaHtml = HtmlStrings.LicenseHtml("formula", formulaGroup, formulaLicense.Irating.ToString(), formulaLicense.SafetyRating.ToString("0.00")); 
+        var formulaTask = CreateOrUpdateHtmlFile(PathHelper.FormulaHtmlPath, formulaHtml);
+        
+        var sportCarLicense = driverInfo.Data.LicenseHistory.FirstOrDefault(x => x.Category == "sports_car");
+        var sportCarGroup = sportCarLicense.GroupName.Contains("Class ") ? sportCarLicense.GroupName.Substring("Class ".Length) : sportCarLicense.GroupName;
+        var sportCarHtml = HtmlStrings.LicenseHtml("sportscar", sportCarGroup, sportCarLicense.Irating.ToString(), sportCarLicense.SafetyRating.ToString("0.00")); 
+        var sportCarTask = CreateOrUpdateHtmlFile(PathHelper.SportCarHtmlPath, sportCarHtml);
+        
+        var ovalLicense = driverInfo.Data.LicenseHistory.FirstOrDefault(x => x.Category == "oval"); 
+        var ovalGroup = ovalLicense.GroupName.Contains("Class ") ? ovalLicense.GroupName.Substring("Class ".Length) : ovalLicense.GroupName;
+        var ovalHtml = HtmlStrings.LicenseHtml("oval", ovalGroup, ovalLicense.Irating.ToString(), ovalLicense.SafetyRating.ToString("0.00"));
+        var ovalTask = CreateOrUpdateHtmlFile(PathHelper.OvalHtmlPath, ovalHtml);
+        
+        var dirtRoadLicense = driverInfo.Data.LicenseHistory.FirstOrDefault(x => x.Category == "dirt_road"); 
+        var dirtRoadGroup = dirtRoadLicense.GroupName.Contains("Class ") ? dirtRoadLicense.GroupName.Substring("Class ".Length) : dirtRoadLicense.GroupName;
+        var dirtRoadHtml = HtmlStrings.LicenseHtml("dirtroad", dirtRoadGroup, dirtRoadLicense.Irating.ToString(), dirtRoadLicense.SafetyRating.ToString("0.00")); 
+        var dirtRoadTask = CreateOrUpdateHtmlFile(PathHelper.DirtRoadHtmlPath, dirtRoadHtml);
+        
+        var dirtOvalLicense = driverInfo.Data.LicenseHistory.FirstOrDefault(x => x.Category == "dirt_oval"); 
+        var dirtOvalGroup = dirtOvalLicense.GroupName.Contains("Class ") ? dirtOvalLicense.GroupName.Substring("Class ".Length) : dirtOvalLicense.GroupName;
+        var dirtOvalHtml = HtmlStrings.LicenseHtml("dirtoval", dirtOvalGroup, dirtOvalLicense.Irating.ToString(), dirtOvalLicense.SafetyRating.ToString("0.00")); 
+        var dirtOvalTask = CreateOrUpdateHtmlFile(PathHelper.DirtOvalHtmlPath, dirtOvalHtml);
+        
+        var recentEvent = driverInfo.Data.RecentEvents.OrderByDescending(x=>x.StartTime).FirstOrDefault(x=> x.EventType == "RACE"); 
+        var recentEventHtml = HtmlStrings.RecentEventHtml(recentEvent.EventName, recentEvent.CarName, recentEvent.Track.TrackName, recentEvent.StartingPosition, recentEvent.FinishPosition); 
+        var recentEventTask = CreateOrUpdateHtmlFile(PathHelper.RecentEventHtmlPath, recentEventHtml);
+      
+        Task.WhenAll(formulaTask, sportCarTask, ovalTask, dirtRoadTask, dirtOvalTask, recentEventTask).ConfigureAwait(false);
+        
+        Dispatcher.Invoke(() =>
+        {
+            statsStatusText.Content = "✅ Actualización exitosa";
+            statsStatusText.Background = System.Windows.Media.Brushes.LightSeaGreen;
+            loadingProgressBar.Visibility = Visibility.Visible;
+        });
+        
+        await Task.Delay(2000);
+        
+        Dispatcher.Invoke(() =>
+        {
+            statsStatusText.Content = "⌛ Esperando...";
+            statsStatusText.Background = System.Windows.Media.Brushes.LightYellow;
+            loadingProgressBar.Visibility = Visibility.Visible;
+        });
+            
+    }
+    
+    private async Task CreateOrUpdateHtmlFile(string filePath, string html)
+    {
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+        
+        using (var sw = new StreamWriter(filePath))
+        {
+            await sw.WriteAsync(html);
+        }
+    }
+
+    private void UpdateStatsToggleButton_OnUnchecked(object sender, RoutedEventArgs e)
+    {
+        loadingProgressBar.Visibility = Visibility.Hidden;
+        
+        updateStatsToggleButton.Background = System.Windows.Media.Brushes.OrangeRed; 
+        
+        if (_timer != null)
+        {
+            _timer.Dispose();
+            _timer = null;
+            
+            statsStatusText.Content = "❌ Actualización detenida";
+            statsStatusText.Background = System.Windows.Media.Brushes.LightCoral;
+        }
+    }
+}

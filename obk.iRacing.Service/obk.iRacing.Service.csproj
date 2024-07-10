@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Aydsko.iRacingData" Version="2402.2.0" />
+      <PackageReference Include="Aydsko.iRacingData" Version="2403.1.0" />
     </ItemGroup>
 
 </Project>

@@ -90,7 +90,7 @@ public partial class Extensions : Window
         var dirtOvalTask = CreateOrUpdateHtmlFile(PathHelper.DirtOvalHtmlPath, dirtOvalHtml);
         
         var recentEvent = lastRaces.Data.Races.FirstOrDefault();
-        var iratingGain = recentEvent.OldiRating - recentEvent.NewiRating;
+        var iratingGain =  recentEvent.NewiRating - recentEvent.OldiRating;
         var recentEventHtml = HtmlStrings.RecentEventHtml(recentEvent.SeriesName, recentEvent.Track.TrackName, recentEvent.StartPosition, recentEvent.FinishPosition, recentEvent.Incidents, iratingGain); 
         var recentEventTask = CreateOrUpdateHtmlFile(PathHelper.RecentEventHtmlPath, recentEventHtml);
       

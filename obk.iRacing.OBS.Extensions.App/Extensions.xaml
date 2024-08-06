@@ -4,10 +4,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:WpfApp3"
+        xmlns:c1="http://schemas.componentone.com/winfx/2006/xaml"
         mc:Ignorable="d"
-        Title="Extensions" Height="200" Width="700">
+        Title="Extensions" Height="200" Width="900">
     <Grid>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
@@ -26,7 +29,9 @@
         </Grid.RowDefinitions>
         <Label Content="Actualizar estadísticas" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <ProgressBar x:Name="loadingProgressBar" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" IsIndeterminate="True" Visibility="Hidden" Margin="10"/>
-        <ToggleButton x:Name="updateStatsToggleButton" Checked="UpdateStatsToggleButton_OnChecked" Unchecked="UpdateStatsToggleButton_OnUnchecked" Content="Encender/Apagar" Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Label x:Name="statsStatusText" Content="❌ Actualización detenida" Background="LightCoral" Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <TextBox x:Name="hexColor" TextChanged="ChangedHexText" Grid.Row="0" Grid.Column="2" Width="60" Height="20"></TextBox>
+        <Label x:Name="hexColorPreview" Grid.Row="0" Grid.Column="3" Width="20" Height="20"></Label>
+        <ToggleButton x:Name="updateStatsToggleButton" Checked="UpdateStatsToggleButton_OnChecked" Unchecked="UpdateStatsToggleButton_OnUnchecked" Content="Encender/Apagar" Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Label x:Name="statsStatusText" Content="❌ Actualización detenida" Background="LightCoral" Grid.Row="0" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center"/>
     </Grid>
 </Window>
